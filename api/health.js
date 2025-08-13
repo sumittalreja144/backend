@@ -13,16 +13,28 @@ const corsHandler = cors({
 });
 
 export default function handler(req, res) {
+    // Handle CORS manually for better control
+    const origin = req.headers.origin;
+    const allowedOrigins = [
+        'https://www.shriramsolar.co.in',
+        'http://localhost:5173',
+        'http://localhost:3000'
+    ];
+    
+    if (allowedOrigins.includes(origin)) {
+        res.setHeader('Access-Control-Allow-Origin', origin);
+    }
+    
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    
     // Handle CORS preflight
     if (req.method === 'OPTIONS') {
-        res.setHeader('Access-Control-Allow-Origin', 'https://www.shriramsolar.co.in, http://localhost:5173, http://localhost:3000');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
-        res.setHeader('Access-Control-Allow-Credentials', 'true');
         return res.status(200).end();
     }
 
-    // Apply CORS
+    // Apply CORS middleware as backup
     corsHandler(req, res, () => {
         if (req.method !== 'GET') {
             res.status(405).json({ error: 'Method not allowed' });
