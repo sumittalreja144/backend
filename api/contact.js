@@ -1,5 +1,13 @@
 import multer from "multer";
 import { Resend } from "resend";
+import cors from 'cors';
+
+// Configure CORS
+const corsHandler = cors({
+    origin: '*', // In production, specify your domain
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+});
 
 // Configure multer for serverless
 const upload = multer({
@@ -12,22 +20,14 @@ const upload = multer({
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export default function handler(req, res) {
-    // Set CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+    // Apply CORS
+    corsHandler(req, res, () => {
+        if (req.method !== 'POST') {
+            res.status(405).json({ error: 'Method not allowed' });
+            return;
+        }
 
-    if (req.method === 'OPTIONS') {
-        res.status(200).end();
-        return;
-    }
-
-    if (req.method !== 'POST') {
-        res.status(405).json({ error: 'Method not allowed' });
-        return;
-    }
-
-    // Handle multipart form data
+        // Handle multipart form data
     upload.fields([
         { name: "lightBill", maxCount: 1 },
         { name: "locationPhoto", maxCount: 1 }
@@ -86,6 +86,7 @@ export default function handler(req, res) {
             });
         }
     });
+});
 }
 
 export const config = {
