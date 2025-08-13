@@ -14,8 +14,8 @@ export default function handler(req, res) {
         return;
     }
 
-    res.status(200).json({ 
-        message: "Solar Site Backend API", 
+    res.status(200).json({
+        message: "Solar Site Backend API",
         status: "running",
         timestamp: new Date().toISOString(),
         endpoints: [
