@@ -32,15 +32,15 @@ export default function handler(req, res) {
         'http://localhost:5173',
         'http://localhost:3000'
     ];
-    
+
     if (allowedOrigins.includes(origin)) {
         res.setHeader('Access-Control-Allow-Origin', origin);
     }
-    
+
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With');
     res.setHeader('Access-Control-Allow-Credentials', 'true');
-    
+
     // Handle CORS preflight
     if (req.method === 'OPTIONS') {
         return res.status(200).end();
