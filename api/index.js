@@ -1,11 +1,7 @@
 import cors from 'cors';
 
 // Configure CORS
-const corsHandler = cors({
-    origin: 'https://www.shriramsolar.co.in', // In production, specify your domain
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
-});
+const corsHandler = cors();
 
 export default function handler(req, res) {
     // Apply CORS
