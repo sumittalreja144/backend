@@ -11,7 +11,7 @@ app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    
+
     if (req.method === 'OPTIONS') {
         res.sendStatus(200);
     } else {
@@ -62,15 +62,15 @@ app.post("/api/contact", upload.fields([
 
 app.get("/api/health", (req, res) => {
     try {
-        res.status(200).json({ 
-            status: "ok", 
+        res.status(200).json({
+            status: "ok",
             timestamp: new Date().toISOString(),
             environment: process.env.NODE_ENV || 'development'
         });
     } catch (error) {
-        res.status(500).json({ 
-            status: "error", 
-            message: error.message 
+        res.status(500).json({
+            status: "error",
+            message: error.message
         });
     }
 });
@@ -83,7 +83,7 @@ app.get("/", (req, res) => {
 // Error handling middleware
 app.use((error, req, res, next) => {
     console.error('Error:', error);
-    res.status(500).json({ 
+    res.status(500).json({
         error: 'Internal Server Error',
         message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
     });
