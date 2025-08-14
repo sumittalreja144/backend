@@ -84,7 +84,7 @@ app.post("/api/contact", upload.fields([
             `
         });
 
-        console.log('📧 Email sent successfully:', msgres.data?.id);
+        console.log('📧 Email sent successfully:', msgres.data);
 
 
         res.status(200).json({
