@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from "express";
 import multer from "multer";
 import { Resend } from "resend";
@@ -18,16 +19,20 @@ let resend = null;
 if (process.env.RESEND_API_KEY) {
     resend = new Resend(process.env.RESEND_API_KEY);
 } else {
-    console.warn('Warning: RESEND_API_KEY not found. Email functionality will be disabled.');
+    console.warn('⚠️  Warning: RESEND_API_KEY not found. Email functionality will be disabled.');
 }
 
-// Configure CORS with specific origins
-const corsOptions = {
-    origin: [
+// Configure CORS with specific origins from environment
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',')
+    : [
         'https://www.shriramsolar.co.in',
         'http://localhost:5173',
         'http://localhost:3000'
-    ],
+    ];
+
+const corsOptions = {
+    origin: allowedOrigins,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
     credentials: true
@@ -65,9 +70,9 @@ app.post("/api/contact", upload.fields([
             attachmentInfo += `<p>Location Photo: ${locationPhoto.originalname} (${(locationPhoto.size / 1024).toFixed(2)} KB)</p>`;
         }
 
-        await resend.emails.send({
-            from: "no-reply@yourdomain.com",
-            to: "shriramsolar3@gmail.com",
+        console.log({
+            from: process.env.FROM_EMAIL || "no-reply@yourdomain.com",
+            to: process.env.TO_EMAIL || "shriramsolar3@gmail.com",
             subject: "New Contact Form Submission",
             html: `
                 <h2>New Contact Form Submission</h2>
@@ -78,6 +83,24 @@ app.post("/api/contact", upload.fields([
                 <p><em>Note: File attachments were received but not included in this email.</em></p>
             `
         });
+
+
+        const msgres = await resend.emails.send({
+            from: process.env.FROM_EMAIL || "no-reply@yourdomain.com",
+            to: process.env.TO_EMAIL || "shriramsolar3@gmail.com",
+            subject: "New Contact Form Submission",
+            html: `
+                <h2>New Contact Form Submission</h2>
+                <p><strong>Name:</strong> ${name}</p>
+                <p><strong>Email:</strong> ${email}</p>
+                <p><strong>Message:</strong> ${message}</p>
+                ${attachmentInfo}
+                <p><em>Note: File attachments were received but not included in this email.</em></p>
+            `
+        });
+
+        console.log('📧 Email sent successfully:', msgres.data);
+
 
         res.status(200).json({
             success: true,
@@ -138,9 +161,10 @@ app.use((req, res) => {
 if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
     const PORT = process.env.PORT || 3000;
     app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-        console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-        console.log('Available endpoints:');
+        console.log(`🚀 Server running on port ${PORT}`);
+        console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log(`🔗 CORS origins: ${allowedOrigins.join(', ')}`);
+        console.log('📋 Available endpoints:');
         console.log('  GET  / - API information');
         console.log('  GET  /api/health - Health check');
         console.log('  POST /api/contact - Contact form');
