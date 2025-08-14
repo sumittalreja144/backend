@@ -4,7 +4,14 @@ import { Resend } from "resend";
 import cors from "cors";
 
 const app = express();
-const upload = multer({ dest: "uploads/" });
+
+// Configure multer for serverless (memory storage only)
+const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB limit
+    }
+});
 
 // Initialize Resend only if API key is available
 let resend = null;
@@ -15,18 +22,18 @@ if (process.env.RESEND_API_KEY) {
 }
 
 // Configure CORS with specific origins
-// const corsOptions = {
-//     origin: [
-//         'https://www.shriramsolar.co.in',
-//         'http://localhost:5173',
-//         'http://localhost:3000'
-//     ],
-//     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-//     allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
-//     credentials: true
-// };
+const corsOptions = {
+    origin: [
+        'https://www.shriramsolar.co.in',
+        'http://localhost:5173',
+        'http://localhost:3000'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+    credentials: true
+};
 
-app.use(cors());
+app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -52,10 +59,10 @@ app.post("/api/contact", upload.fields([
 
         let attachmentInfo = '';
         if (lightBill) {
-            attachmentInfo += `<p>Light Bill: ${lightBill.originalname} (${lightBill.size} bytes)</p>`;
+            attachmentInfo += `<p>Light Bill: ${lightBill.originalname} (${(lightBill.size / 1024).toFixed(2)} KB)</p>`;
         }
         if (locationPhoto) {
-            attachmentInfo += `<p>Location Photo: ${locationPhoto.originalname} (${locationPhoto.size} bytes)</p>`;
+            attachmentInfo += `<p>Location Photo: ${locationPhoto.originalname} (${(locationPhoto.size / 1024).toFixed(2)} KB)</p>`;
         }
 
         await resend.emails.send({
@@ -127,16 +134,18 @@ app.use((req, res) => {
     res.status(404).json({ error: 'Endpoint not found' });
 });
 
-// Start server in all environments for local development
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log('Available endpoints:');
-    console.log('  GET  / - API information');
-    console.log('  GET  /api/health - Health check');
-    console.log('  POST /api/contact - Contact form');
-});
+// Only start server in local development
+if (process.env.NODE_ENV !== 'production' && !process.env.VERCEL) {
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+        console.log(`Server running on port ${PORT}`);
+        console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+        console.log('Available endpoints:');
+        console.log('  GET  / - API information');
+        console.log('  GET  /api/health - Health check');
+        console.log('  POST /api/contact - Contact form');
+    });
+}
 
 // Export as serverless function for Vercel
 export default app;
