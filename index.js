@@ -1,23 +1,32 @@
 import express from "express";
 import multer from "multer";
 import { Resend } from "resend";
+import cors from "cors";
 
 const app = express();
 const upload = multer({ dest: "uploads/" });
-const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Add CORS headers for cross-origin requests
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+// Initialize Resend only if API key is available
+let resend = null;
+if (process.env.RESEND_API_KEY) {
+    resend = new Resend(process.env.RESEND_API_KEY);
+} else {
+    console.warn('Warning: RESEND_API_KEY not found. Email functionality will be disabled.');
+}
 
-    if (req.method === 'OPTIONS') {
-        res.sendStatus(200);
-    } else {
-        next();
-    }
-});
+// Configure CORS with specific origins
+// const corsOptions = {
+//     origin: [
+//         'https://www.shriramsolar.co.in',
+//         'http://localhost:5173',
+//         'http://localhost:3000'
+//     ],
+//     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//     allowedHeaders: ['Origin', 'X-Requested-With', 'Content-Type', 'Accept', 'Authorization'],
+//     credentials: true
+// };
+
+app.use(cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -28,35 +37,51 @@ app.post("/api/contact", upload.fields([
 ]), async (req, res) => {
     try {
         const { name, email, message } = req.body;
+
+        if (!name || !email || !message) {
+            return res.status(400).json({ error: 'Missing required fields' });
+        }
+
+        if (!resend) {
+            console.error('RESEND_API_KEY not configured');
+            return res.status(500).json({ error: 'Email service not configured' });
+        }
+
         const lightBill = req.files["lightBill"]?.[0];
         const locationPhoto = req.files["locationPhoto"]?.[0];
 
-        // Prepare attachments
-        const attachments = [];
+        let attachmentInfo = '';
         if (lightBill) {
-            attachments.push({
-                filename: lightBill.originalname,
-                path: lightBill.path
-            });
+            attachmentInfo += `<p>Light Bill: ${lightBill.originalname} (${lightBill.size} bytes)</p>`;
         }
         if (locationPhoto) {
-            attachments.push({
-                filename: locationPhoto.originalname,
-                path: locationPhoto.path
-            });
+            attachmentInfo += `<p>Location Photo: ${locationPhoto.originalname} (${locationPhoto.size} bytes)</p>`;
         }
 
         await resend.emails.send({
             from: "no-reply@yourdomain.com",
             to: "shriramsolar3@gmail.com",
             subject: "New Contact Form Submission",
-            html: `<p>Name: ${name}</p><p>Email: ${email}</p><p>Message: ${message}</p>`
-            // Attachments are not supported directly by Resend as of now
+            html: `
+                <h2>New Contact Form Submission</h2>
+                <p><strong>Name:</strong> ${name}</p>
+                <p><strong>Email:</strong> ${email}</p>
+                <p><strong>Message:</strong> ${message}</p>
+                ${attachmentInfo}
+                <p><em>Note: File attachments were received but not included in this email.</em></p>
+            `
         });
 
-        res.status(200).json({ success: true });
+        res.status(200).json({
+            success: true,
+            message: 'Email sent successfully'
+        });
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        console.error('Contact form error:', error);
+        res.status(500).json({
+            error: 'Failed to send email',
+            details: error.message
+        });
     }
 });
 
@@ -77,7 +102,15 @@ app.get("/api/health", (req, res) => {
 
 // Add a root endpoint
 app.get("/", (req, res) => {
-    res.json({ message: "Solar Site Backend API", status: "running" });
+    res.json({
+        message: "Solar Site Backend API",
+        status: "running",
+        timestamp: new Date().toISOString(),
+        endpoints: [
+            "GET /api/health - Health check",
+            "POST /api/contact - Contact form submission"
+        ]
+    });
 });
 
 // Error handling middleware
@@ -94,13 +127,16 @@ app.use((req, res) => {
     res.status(404).json({ error: 'Endpoint not found' });
 });
 
-// For local development
-if (process.env.NODE_ENV !== 'production') {
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-        console.log(`Server running on port ${PORT}`);
-    });
-}
+// Start server in all environments for local development
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log('Available endpoints:');
+    console.log('  GET  / - API information');
+    console.log('  GET  /api/health - Health check');
+    console.log('  POST /api/contact - Contact form');
+});
 
 // Export as serverless function for Vercel
 export default app;
