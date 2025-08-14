@@ -70,24 +70,9 @@ app.post("/api/contact", upload.fields([
             attachmentInfo += `<p>Location Photo: ${locationPhoto.originalname} (${(locationPhoto.size / 1024).toFixed(2)} KB)</p>`;
         }
 
-        console.log({
-            from: process.env.FROM_EMAIL || "Acme <onboarding@resend.dev>",
-            to: process.env.TO_EMAIL || "shriramsolar3@gmail.com",
-            subject: "New Contact Form Submission",
-            html: `
-                <h2>New Contact Form Submission</h2>
-                <p><strong>Name:</strong> ${name}</p>
-                <p><strong>Email:</strong> ${email}</p>
-                <p><strong>Message:</strong> ${message}</p>
-                ${attachmentInfo}
-                <p><em>Note: File attachments were received but not included in this email.</em></p>
-            `
-        });
-
-
         const msgres = await resend.emails.send({
-            from: process.env.FROM_EMAIL || "no-reply@yourdomain.com",
-            to: process.env.TO_EMAIL || "shriramsolar3@gmail.com",
+            from: "Acme <onboarding@resend.dev>",
+            to: ["shriramsolar3@gmail.com"],
             subject: "New Contact Form Submission",
             html: `
                 <h2>New Contact Form Submission</h2>
@@ -99,7 +84,7 @@ app.post("/api/contact", upload.fields([
             `
         });
 
-        console.log('📧 Email sent successfully:', msgres.data);
+        console.log('📧 Email sent successfully:', msgres);
 
 
         res.status(200).json({
