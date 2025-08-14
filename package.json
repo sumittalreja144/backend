@@ -1,12 +1,13 @@
 {
   "name": "solar-site-server",
   "version": "1.0.0",
-  "main": "api/index.js",
+  "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "vercel dev",
-    "start": "vercel start",
-    "deploy": "vercel --prod"
+    "dev": "node index.js",
+    "start": "node index.js",
+    "deploy": "vercel --prod",
+    "vercel-dev": "vercel dev"
   },
   "dependencies": {
     "cors": "^2.8.5",
