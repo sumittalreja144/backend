@@ -63,16 +63,31 @@ app.post("/api/contact", upload.fields([
         const locationPhoto = req.files["locationPhoto"]?.[0];
 
         let attachmentInfo = '';
+        let attachments = [];
+
+        // Process Light Bill attachment
         if (lightBill) {
             attachmentInfo += `<p>Light Bill: ${lightBill.originalname} (${(lightBill.size / 1024).toFixed(2)} KB)</p>`;
-        }
-        if (locationPhoto) {
-            attachmentInfo += `<p>Location Photo: ${locationPhoto.originalname} (${(locationPhoto.size / 1024).toFixed(2)} KB)</p>`;
+            attachments.push({
+                filename: lightBill.originalname,
+                content: lightBill.buffer.toString('base64'),
+                type: lightBill.mimetype
+            });
         }
 
-        await resend.emails.send({
-            from: "Acme <onboarding@resend.dev>",
-            to: ["shriramsolar3@gmail.com"],
+        // Process Location Photo attachment
+        if (locationPhoto) {
+            attachmentInfo += `<p>Location Photo: ${locationPhoto.originalname} (${(locationPhoto.size / 1024).toFixed(2)} KB)</p>`;
+            attachments.push({
+                filename: locationPhoto.originalname,
+                content: locationPhoto.buffer.toString('base64'),
+                type: locationPhoto.mimetype
+            });
+        }
+
+        const emailData = {
+            from: process.env.FROM_EMAIL || "Solar Contact <onboarding@resend.dev>",
+            to: [process.env.TO_EMAIL || "shriramsolar3@gmail.com"],
             subject: "New Contact Form Submission",
             html: `
                 <h2>New Contact Form Submission</h2>
@@ -81,9 +96,18 @@ app.post("/api/contact", upload.fields([
                 <p><strong>Phone:</strong> ${phone}</p>
                 <p><strong>Message:</strong> ${message}</p>
                 ${attachmentInfo}
-                <p><em>Note: File attachments were received but not included in this email.</em></p>
+                ${attachments.length > 0 ? '<p><em>File attachments are included with this email.</em></p>' : '<p><em>No file attachments.</em></p>'}
             `
-        });
+        };
+
+        // Add attachments if they exist
+        if (attachments.length > 0) {
+            emailData.attachments = attachments;
+        }
+
+        const emailResult = await resend.emails.send(emailData);
+
+        console.log('📧 Email sent successfully:', emailResult.data?.id);
 
         res.status(200).json({
             success: true,
