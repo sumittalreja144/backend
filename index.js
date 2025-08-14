@@ -71,7 +71,7 @@ app.post("/api/contact", upload.fields([
         }
 
         console.log({
-            from: process.env.FROM_EMAIL || "no-reply@yourdomain.com",
+            from: process.env.FROM_EMAIL || "Acme <onboarding@resend.dev>",
             to: process.env.TO_EMAIL || "shriramsolar3@gmail.com",
             subject: "New Contact Form Submission",
             html: `
