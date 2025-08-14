@@ -48,9 +48,9 @@ app.post("/api/contact", upload.fields([
     { name: "locationPhoto", maxCount: 1 }
 ]), async (req, res) => {
     try {
-        const { name, email, message } = req.body;
+        const { name, email, message, phone } = req.body;
 
-        if (!name || !email || !message) {
+        if (!name || !email || !message || !phone) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
@@ -70,7 +70,7 @@ app.post("/api/contact", upload.fields([
             attachmentInfo += `<p>Location Photo: ${locationPhoto.originalname} (${(locationPhoto.size / 1024).toFixed(2)} KB)</p>`;
         }
 
-        const msgres = await resend.emails.send({
+        await resend.emails.send({
             from: "Acme <onboarding@resend.dev>",
             to: ["shriramsolar3@gmail.com"],
             subject: "New Contact Form Submission",
@@ -78,14 +78,12 @@ app.post("/api/contact", upload.fields([
                 <h2>New Contact Form Submission</h2>
                 <p><strong>Name:</strong> ${name}</p>
                 <p><strong>Email:</strong> ${email}</p>
+                <p><strong>Phone:</strong> ${phone}</p>
                 <p><strong>Message:</strong> ${message}</p>
                 ${attachmentInfo}
                 <p><em>Note: File attachments were received but not included in this email.</em></p>
             `
         });
-
-        console.log('📧 Email sent successfully:', msgres);
-
 
         res.status(200).json({
             success: true,
